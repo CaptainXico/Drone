@@ -32,14 +32,14 @@
       ></a-asset-item>   
 
       <!-- Creature to click -->
-      <a-entity 
-        id="cube" 
-        gltf-model="#creaturemodel" 
-        position="0 2 -5"
-        scale="0.5 0.5 0.5"
-        class="clickable"
-        follow-camera="speed: 3"
-      ></a-entity>
+      <a-entity id="droneWrapper" follow-camera="speed: 3">
+        <a-entity 
+          id="cube"
+          gltf-model="#creaturemodel"
+          rotation="0 180 0"
+          scale="0.5 0.5 0.5">
+        </a-entity>
+      </a-entity>
 
       <!-- Create light -->
       <a-entity

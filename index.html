@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>watch out for the Police Drone!</title>
+    <meta name="description" content="Drone attack"/>
+    <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
+    <script src="https://unpkg.com/aframe-environment-component@1.1.0/dist/aframe-environment-component.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe-animation-component/5.0.0/aframe-animation-component.min.js"></script>
+    <script src="enemy.js"></script>
+  </head>
+  <body>
+    <a-scene background="color: #ECECEC" environment="preset: goldmine">
+      <!-- Camera with cursor -->
+      <a-entity
+        id="camera"
+        position="0 1.6 0"
+        camera
+        look-controls
+        wasd-controls
+      >
+        <a-cursor color="#333" maxdistance="30"></a-cursor>
+      </a-entity>
+
+      <!-- Pico 4 controller (assumed as a generic laser controller for simplicity) -->
+      <a-entity laser-controls="hand: right" id="controller"></a-entity>
+
+      <a-asset-item
+        id="creaturemodel"
+        src="Drone.glb"
+      ></a-asset-item>   
+
+      <!-- Creature to click -->
+      <a-entity 
+        id="cube" 
+        gltf-model="#creaturemodel" 
+        position="0 2 -5"
+        scale="0.5 0.5 0.5"     
+        class="clickable"
+      ></a-entity>
+
+      <!-- Create light -->
+      <a-entity
+        id="lightSphere"
+        geometry="primitive: sphere"
+        material="color: cyan; shader: flat"
+        light="type: point"
+        position="4 50 -116"
+        scale="10 10 10"
+      ></a-entity>
+    </a-scene>
+  </body>
+</html>

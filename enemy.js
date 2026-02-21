@@ -1,7 +1,10 @@
+// ===============================
+// Sprint with Shift
+// ===============================
 document.addEventListener("keydown", function (e) {
   let camera = document.querySelector("#camera");
 
-  if (e.key == "Shift") {
+  if (e.key === "Shift") {
     camera.setAttribute("wasd-controls", "acceleration", 400);
   }
 });
@@ -9,63 +12,98 @@ document.addEventListener("keydown", function (e) {
 document.addEventListener("keyup", function (e) {
   let camera = document.querySelector("#camera");
 
-  if (e.key == "Shift") {
+  if (e.key === "Shift") {
     camera.setAttribute("wasd-controls", "acceleration", 10);
   }
 });
 
-// Function to generate a random position
+
+// ===============================
+// Random spawn position
+// ===============================
 function getRandomPosition() {
-  var x = Math.random() * 20 - 10; // Random x between -10 and 10
-  var y = Math.random() * 5; // Random y between 0 and 5
-  var z = Math.random() * 20 - 10; // Random z between -10 and 10
-  return { x: x, y: y, z: z };
-}
-
-// Function to update the model's position smoothly
-function moveModelToCamera(model, camera) {
-  var cameraPosition = camera.getAttribute('position');
-  var modelPosition = model.getAttribute('position');
-  
-  var dx = (cameraPosition.x - modelPosition.x) * 0.05;
-  var dy = (cameraPosition.y - modelPosition.y) * 0.05;
-  var dz = (cameraPosition.z - modelPosition.z - 2) * 0.05; // Offset to keep the model in front of the camera
-
-  var newPosition = {
-    x: modelPosition.x + dx,
-    y: modelPosition.y + dy,
-    z: modelPosition.z + dz
+  return {
+    x: Math.random() * 20 - 10,
+    y: Math.random() * 4 + 1,
+    z: Math.random() * 20 - 10
   };
-
-  model.setAttribute('position', newPosition);
-  model.setAttribute('look-at', '#camera'); // Make the model face the camera
 }
 
-window.onload = function () {
-  // Get the model and camera elements
-  var model = document.getElementById("cube");
-  var camera = document.getElementById("camera");
 
-  // Add event listener for controller button press
-  var controller = document.getElementById("controller");
+// ===============================
+// Drone Follow Component
+// ===============================
+AFRAME.registerComponent('follow-camera', {
+  schema: {
+    speed: { type: 'number', default: 2 },
+    attackDistance: { type: 'number', default: 1.5 }
+  },
+
+  init: function () {
+    this.camera = document.querySelector('#camera');
+    this.caught = false;
+  },
+
+  tick: function (time, timeDelta) {
+    if (!this.el.getAttribute('visible')) return;
+    if (!this.camera) return;
+
+    const modelPos = this.el.object3D.position;
+    const cameraPos = this.camera.object3D.position;
+
+    // Direction toward camera
+    const direction = new THREE.Vector3();
+    direction.subVectors(cameraPos, modelPos);
+    direction.normalize();
+
+    // Smooth frame-based movement
+    const moveAmount = this.data.speed * (timeDelta / 1000);
+    modelPos.add(direction.multiplyScalar(moveAmount));
+
+    // Hover effect (floating drone motion)
+    modelPos.y += Math.sin(time / 300) * 0.002;
+
+    // Always face the camera
+    this.el.object3D.lookAt(cameraPos);
+
+    // Attack detection
+    const distance = modelPos.distanceTo(cameraPos);
+
+    if (distance < this.data.attackDistance && !this.caught) {
+      this.caught = true;
+      alert("🚨 YOU GOT CAUGHT BY THE POLICE DRONE! 🚨");
+    }
+  }
+});
+
+
+// ===============================
+// Setup on Load
+// ===============================
+window.onload = function () {
+
+  const model = document.getElementById("cube");
+  const controller = document.getElementById("controller");
+
+  // Attach follow component
+  model.setAttribute("follow-camera", "speed: 3; attackDistance: 1.5");
+
+  // Shoot drone with controller
   controller.addEventListener("triggerdown", function () {
-    // Make the model invisible
+
+    // Hide drone
     model.setAttribute("visible", false);
 
-    // Set a timeout to respawn the model after 3 seconds
-    setTimeout(function() {
-      // Get a random position
-      var newPosition = getRandomPosition();
+    // Reset caught state
+    model.components["follow-camera"].caught = false;
 
-      // Place the model at the random position and make it visible
-      model.setAttribute('position', newPosition);
-      model.setAttribute('visible', true);
+    // Respawn after 3 seconds
+    setTimeout(function () {
 
-      // Start updating the model's position towards the camera
-      clearInterval(model.followInterval);
-      model.followInterval = setInterval(function() {
-        moveModelToCamera(model, camera);
-      }, 100); // Update every 100 milliseconds
-    }, 3000); // 3000 milliseconds = 3 seconds
+      const newPosition = getRandomPosition();
+      model.setAttribute("position", newPosition);
+      model.setAttribute("visible", true);
+
+    }, 3000);
   });
 };

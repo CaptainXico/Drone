@@ -74,7 +74,7 @@ AFRAME.registerComponent("follow-camera", {
       camPos.z - dronePos.z
     );
 
-    const rotationOffset = Math.PI; // 180 degrees
+    const rotationOffset = -Math.PI; // 180 degrees
 
     drone.rotation.y = angle;
   }

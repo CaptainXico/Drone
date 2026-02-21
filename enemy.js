@@ -2,16 +2,14 @@
 // Sprint with Shift
 // ===============================
 document.addEventListener("keydown", function (e) {
-  let camera = document.querySelector("#camera");
-
+  const camera = document.querySelector("#camera");
   if (e.key === "Shift") {
     camera.setAttribute("wasd-controls", "acceleration", 400);
   }
 });
 
 document.addEventListener("keyup", function (e) {
-  let camera = document.querySelector("#camera");
-
+  const camera = document.querySelector("#camera");
   if (e.key === "Shift") {
     camera.setAttribute("wasd-controls", "acceleration", 10);
   }
@@ -24,86 +22,78 @@ document.addEventListener("keyup", function (e) {
 function getRandomPosition() {
   return {
     x: Math.random() * 20 - 10,
-    y: Math.random() * 4 + 1,
+    y: 2,
     z: Math.random() * 20 - 10
   };
 }
 
 
 // ===============================
-// Drone Follow Component
+// Smooth Follow Component
 // ===============================
-AFRAME.registerComponent('follow-camera', {
+AFRAME.registerComponent("follow-camera", {
   schema: {
-    speed: { type: 'number', default: 2 },
-    attackDistance: { type: 'number', default: 1.5 }
+    speed: { type: "number", default: 2 },
+    stopDistance: { type: "number", default: 2 }
   },
 
   init: function () {
-    this.camera = document.querySelector('#camera');
-    this.caught = false;
+    this.camera = document.querySelector("#camera");
+    this.direction = new THREE.Vector3();
   },
 
   tick: function (time, timeDelta) {
-    if (!this.el.getAttribute('visible')) return;
+    if (!this.el.getAttribute("visible")) return;
     if (!this.camera) return;
 
-    const modelPos = this.el.object3D.position;
-    const cameraPos = this.camera.object3D.position;
+    const drone = this.el.object3D;
+    const cam = this.camera.object3D;
 
-    // Direction toward camera
-    const direction = new THREE.Vector3();
-    direction.subVectors(cameraPos, modelPos);
-    direction.normalize();
+    const dronePos = drone.position;
+    const camPos = cam.position;
 
-    // Smooth frame-based movement
-    const moveAmount = this.data.speed * (timeDelta / 1000);
-    modelPos.add(direction.multiplyScalar(moveAmount));
+    // Direction to player
+    this.direction.subVectors(camPos, dronePos);
 
-    // Hover effect (floating drone motion)
-    modelPos.y += Math.sin(time / 300) * 0.002;
+    const distance = this.direction.length();
 
-    // Always face the camera
-    this.el.object3D.lookAt(cameraPos);
+    // Stop when close
+    if (distance > this.data.stopDistance) {
+      this.direction.normalize();
 
-    // Attack detection
-    const distance = modelPos.distanceTo(cameraPos);
-
-    if (distance < this.data.attackDistance && !this.caught) {
-      this.caught = true;
-      alert("🚨 YOU GOT CAUGHT BY THE POLICE DRONE! 🚨");
+      const moveAmount = this.data.speed * (timeDelta / 1000);
+      dronePos.add(this.direction.multiplyScalar(moveAmount));
     }
+
+    // Smooth hover (stable)
+    dronePos.y = 2 + Math.sin(time * 0.002) * 0.3;
+
+    // Smoothly rotate toward camera (Y axis only)
+    const angle = Math.atan2(
+      camPos.x - dronePos.x,
+      camPos.z - dronePos.z
+    );
+
+    drone.rotation.y = angle;
   }
 });
 
 
 // ===============================
-// Setup on Load
+// Setup
 // ===============================
 window.onload = function () {
-
-  const model = document.getElementById("cube");
+  const drone = document.getElementById("cube");
   const controller = document.getElementById("controller");
 
-  // Attach follow component
-  model.setAttribute("follow-camera", "speed: 3; attackDistance: 1.5");
+  drone.setAttribute("follow-camera", "speed: 3; stopDistance: 2");
 
-  // Shoot drone with controller
   controller.addEventListener("triggerdown", function () {
+    drone.setAttribute("visible", false);
 
-    // Hide drone
-    model.setAttribute("visible", false);
-
-    // Reset caught state
-    model.components["follow-camera"].caught = false;
-
-    // Respawn after 3 seconds
     setTimeout(function () {
-
-      const newPosition = getRandomPosition();
-      model.setAttribute("position", newPosition);
-      model.setAttribute("visible", true);
-
+      drone.setAttribute("position", getRandomPosition());
+      drone.setAttribute("visible", true);
     }, 3000);
   });
 };
